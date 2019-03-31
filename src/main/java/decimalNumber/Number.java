@@ -10,9 +10,10 @@ import java.util.regex.Pattern;
 
 import static java.lang.Integer.max;
 import static java.lang.Integer.parseInt;
+import static java.lang.Math.pow;
 
 public class Number {
-    private List<Integer> num = new ArrayList<Integer>();
+    private List<Integer> num = new ArrayList<>();
     private int scale;
     final private int base = 1000000000;
 
@@ -26,7 +27,7 @@ public class Number {
         if (n.length == 2) {
             if (Pattern.compile("^\\s*-?[0-9]+\\s*$").matcher(n[0]).matches()
                     && Pattern.compile("^\\s*[0-9]+\\s*$").matcher(n[1]).matches()) {
-                this.scale = n[1].length();
+                scale = n[1].length();
                 String s = n[0] + n[1];
                 for (int i = s.length(); i > 0; i -= 9) {
                     if (i - 9 < 0)
@@ -58,7 +59,7 @@ public class Number {
 
     public Number mul(@NotNull Number other) {
         long counter = 0;
-        ArrayList<Long> result = new ArrayList<Long>();
+        ArrayList<Long> result = new ArrayList<>();
         for (int i = 0; i < this.num.size(); ++i)
             for (int j = 0; j < other.num.size() || counter != 0; ++j) {
                 if (i + j >= result.size()) result.add(0L);
@@ -71,50 +72,68 @@ public class Number {
     }
 
     public Number add(@NotNull Number other) {
-        List<Integer> dec1 = this.getBefPoint();
-        List<Integer> dec2 = other.getBefPoint();
-        List<Integer> cel1 = this.getAftPoint();
-        List<Integer> cel2 = other.getAftPoint();
-        return new Number(listAdd(cel1, cel2), scale);
-
+        List<Integer> dec1 = this.getAftPoint();
+        List<Integer> dec2 = other.getAftPoint();
+        List<Integer> cel1 = this.getBefPoint();
+        List<Integer> cel2 = other.getBefPoint();
+        while (dec1.size() != dec2.size()) {
+            if (dec1.size() < dec2.size())
+                dec1.add(0, 0);
+            else dec2.add(0, 0);
+        }
+        List<Integer> resDec = listAdd(dec1, dec2);
+        List<Integer> resCel = listAdd(cel1, cel2);
+        if (max(dec1.size(), dec2.size()) == resDec.size()) resDec.add(0);
+        resDec.set(resDec.size() - 2, resDec.get(resDec.size() - 2) /
+                (int) pow(10, max(dec1.size(), dec2.size()) * 9 - max(scale, other.scale)));
+        if (resDec.get(resDec.size() - 1) != 0)
+        resCel = listAdd(resCel, resDec.subList(resDec.size() - 1, resDec.size()));
+        resDec.remove(resDec.size() - 1);
+        for (Integer aResCel : resCel) {
+            resDec.set(resDec.size() - 1, resDec.get(resDec.size() - 1)
+                    + aResCel % (int) pow(10, 9 - scale % 9) * (int) pow(10, scale % 9));
+            resDec.add(aResCel / (int) pow(10, 9 - scale % 9));
+        }
+        return new Number(resDec, max(scale, other.scale));
     }
 
     private List<Integer> getBefPoint() {
-        List<Integer> res = new ArrayList<Integer>();
-        int counter = 0;
-        for (int i = 0; i < num.size(); i += 1) {
-            counter += 9;
-            if (counter > scale) {
-                res.add((int) (num.get(i) % Math.pow(10, scale % 9)));
-                break;
-            }
-            else res.add(num.get(i));
+        List<Integer> res = new ArrayList<>();
+        int counter = num.size() * 9;
+        for (int i = num.size() - 1; i >= 0; i--) {
+            counter -= 9;
+            res.add(0, num.get(i) / (int) pow(10, scale % 9)
+                    + (i < num.size() - 1 ? num.get(i + 1) % (int) pow(10, scale % 9) : 0) *
+                    (int) pow(10,9 - scale % 9));
+            if (counter <= scale) break;
         }
+        if (res.get(res.size() - 1) == 0) res.remove(res.size() - 1);
         return res;
     }
 
     private List<Integer> getAftPoint() {
-        List<Integer> res = new ArrayList<Integer>();
-        int counter = num.size() * 9;
-        for (int i = num.size() - 1; i >= 0; i--) {
-            counter -= 9;
-            if (counter < scale) {
-                res.add((int) (this.num.get(i) / Math.pow(10, scale - counter)));
+        List<Integer> res = new ArrayList<>();
+        int counter = 0;
+        for (Integer aNum : num) {
+            counter += 9;
+            if (counter > scale) {
+                res.add((int) (aNum % pow(10, scale % 9) * pow(10, counter - scale)));
                 break;
-            }
-            else res.add(num.get(i));
+            } else if (counter == scale) {
+                res.add(aNum);
+                break;
+            } else res.add(aNum);
         }
         return res;
     }
 
     private static List<Integer> listAdd(@NotNull List<Integer> th, @NotNull List<Integer> other) {
         int counter = 0;
-
         int base = 1000000000;
-        ArrayList<Integer> res = new ArrayList<Integer>();
+        ArrayList<Integer> res = new ArrayList<>();
         for (int i = 0; i < max(th.size(), other.size()) || counter == 1; i++) {
             res.add(0);
-            res.set(i,  th.get(i) + counter + (i < other.size() ? other.get(i) : 0));
+            res.set(i,  (i < th.size() ? th.get(i) : 0) + counter + (i < other.size() ? other.get(i) : 0));
             if (res.get(i) >= base)
                 counter = 1;
             else counter = 0;
@@ -123,8 +142,9 @@ public class Number {
         return res;
     }
 
+
     private static List<Integer> toListInt(@NotNull List<Long> a) {
-        List<Integer> res = new ArrayList<Integer>();
+        List<Integer> res = new ArrayList<>();
         StringBuilder str = new StringBuilder();
         for (int i = a.size() - 1; i >= 0; i--) {
             int length = getCountsOfDigits(a.get(i));
@@ -146,8 +166,8 @@ public class Number {
     }
 
     public static void main(String[] args) {
-        Number n = new Number("4367365465416516216464.0");
-        Number n1 = new Number("4564565465.0");
+        Number n = new Number("-436736546541651621.45687654623547");
+        Number n1 = new Number("656516849849849846549849.464984");
         System.out.println(n.add(n1).toString());
     }
 }
