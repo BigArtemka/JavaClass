@@ -108,7 +108,7 @@ public class Number {
         int res = 0;
         for (int i = 0; i <= scale - 9; i += 9)
             num.remove(0);
-        num.set(num.size() - 1, num.get(num.size() - 1 / (int) pow(10, scale % 9)));
+        num.set(num.size() - 1, num.get(num.size() - 1) / (int) pow(10, scale % 9));
         for (int i = 0; i < num.size(); i++)
             res += num.get(i) * (int) pow(base, i);
 
@@ -119,7 +119,7 @@ public class Number {
         long res = 0L;
         for (int i = 0; i <= scale - 9; i += 9)
             num.remove(0);
-        num.set(num.size() - 1, num.get(num.size() - 1 / (int) pow(10, scale % 9)));
+        num.set(num.size() - 1, num.get(num.size() - 1) / (int) pow(10, scale % 9));
         for (int i = 0; i < num.size(); i++)
             res += num.get(i) * (long) pow(base, i);
 
